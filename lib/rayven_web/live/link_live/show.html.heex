@@ -1,0 +1,85 @@
+<div class="p-16 grid grid-cols-[55%_45%]">
+  <div>
+    <header class="mt-24">
+      <h1 class="py-6 font-semibold text-6xl max-w-[600px] drop-shadow-lg text-zinc-50 leading-tight">
+        Shhh, it's a secret
+      </h1>
+      <p class="text-xl max-w-[480px] font-semibold drop-shadow-lg text-zinc-50">
+        Only those with this link can view the contents.
+        Make sure you keep it safe.
+      </p>
+    </header>
+  </div>
+
+  <div class="flex justify-center">
+    <div class="mt-24 p-6 w-[425px] rounded-lg shadow-xl bg-white">
+      <%= if @viewing do %>
+        <div
+          class="mb-4"
+          phx-hook="ViewForm"
+          id="view-form"
+          data-passphrase-salt={@link.passphrase_salt}
+          data-aes-iv={@link.aes_iv}
+          data-ciphertext={@link.ciphertext}
+        >
+          <textarea
+            autocomplete="off"
+            name="plaintext"
+            id="plaintext"
+            rows="6"
+            readonly
+            disabled
+            class={[
+              "mt-2 block min-h-[6rem] py-[7px] px-[11px] w-full rounded-md border-indigo-200 bg-indigo-50/40 text-md text-zinc-800"
+            ]}
+          />
+
+          <%= unless Link.viewable?(@link) do %>
+            <span class="block mt-2 mb-4 font-semibold text-sm text-center text-amber-500">
+              This link has now expired
+            </span>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="mb-4">
+          <textarea
+            autocomplete="off"
+            name="plaintext"
+            id="plaintext"
+            rows="6"
+            readonly
+            placeholder="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum"
+            disabled
+            class={[
+              "mt-2 block min-h-[6rem] py-[7px] px-[11px] w-full rounded-md border-indigo-200 bg-indigo-50/40 text-md text-zinc-800",
+              "blur-[3px]"
+            ]}
+          />
+        </div>
+
+        <%= if @error do %>
+          <span class="block mt-2 mb-4 font-semibold text-sm text-center text-red-500">
+            <%= @error %>
+          </span>
+        <% else %>
+          <button
+            phx-hook="ViewButton"
+            id="view-button"
+            class="w-full mb-4 p-2 text-md font-semibold leading-6 rounded border-2 transition ease-in-out duration-300 hover:drop-shadow-lg text-zinc-50 hover:text-white bg-indigo-400 hover:bg-indigo-500 border-indigo-400 hover:border-indigo-500"
+          >
+            View secret
+          </button>
+
+          <span class="block mb-4 text-sm text-zinc-400 font-semibold text-center">OR</span>
+        <% end %>
+      <% end %>
+
+      <.link
+        navigate={~p"/"}
+        class="block w-full p-2 text-center text-md font-semibold leading-6 rounded transition ease-in-out duration-300 hover:drop-shadow-lg text-indigo-400 hover:text-indigo-500 bg-white border-2 border-indigo-400 hover:border-indigo-500"
+      >
+        Share a new secret
+      </.link>
+    </div>
+  </div>
+</div>

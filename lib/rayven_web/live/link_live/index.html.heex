@@ -1,0 +1,122 @@
+<%= if is_nil(@link) do %>
+  <div class="p-16 grid grid-cols-[55%_45%]">
+    <div>
+      <header class="mt-24">
+        <h1 class="pt-6 font-semibold text-6xl max-w-lg drop-shadow-lg text-zinc-50 leading-tight">
+          We keep secrets. You share them.
+        </h1>
+      </header>
+    </div>
+
+    <div class="flex justify-center">
+      <div
+        id="create-form"
+        phx-hook="CreateForm"
+        class="mt-24 p-6 w-[425px] rounded-lg shadow-xl bg-white"
+      >
+        <div class="mb-4">
+          <textarea
+            autofocus
+            autocomplete="off"
+            name="plaintext"
+            id="plaintext"
+            placeholder="Enter data to encrypt and share"
+            rows="6"
+            class={[
+              "mt-2 block min-h-[6rem] py-[7px] px-[11px] w-full rounded-md border-indigo-200 hover:border-indigo-400 bg-indigo-50/40 text-md text-zinc-800",
+              "focus:border-indigo-400 focus:outline-none focus:ring-4 focus:bg-white focus:ring-indigo-800/5",
+              "transition-all ease-in-out duration-300"
+            ]}
+          />
+        </div>
+
+        <div class="mb-4">
+          <p class="text-sm font-semibold text-zinc-500">Expire after</p>
+          <div class="flex justify-between items-center">
+            <select
+              id="max-views"
+              class={[
+                "w-40 mt-1 py-2 px-3 border text-md cursor-pointer transition-all ease-in-out duration-300",
+                "text-zinc-800 border-indigo-200 hover:border-indigo-400 bg-indigo-50/40",
+                "focus:bg-white rounded-md focus:outline-none focus:ring-4 focus:ring-indigo-800/5 focus:border-indigo-400"
+              ]}
+            >
+              <%= Phoenix.HTML.Form.options_for_select(
+                [
+                  "1 view": 1,
+                  "2 views": 2,
+                  "3 views": 3,
+                  "5 views": 5,
+                  "10 views": 10,
+                  "20 views": 20,
+                  "50 views": 50,
+                  Unlimited: :unlimited
+                ],
+                "1"
+              ) %>
+            </select>
+            <span class="text-sm text-zinc-500">or</span>
+            <select
+              id="max-days"
+              class={[
+                "w-40 mt-1 py-2 px-3 border text-md cursor-pointer transition-all ease-in-out duration-300",
+                "text-zinc-800 border-indigo-200 hover:border-indigo-400 bg-indigo-50/40",
+                "focus:bg-white rounded-md focus:outline-none focus:ring-4 focus:ring-indigo-800/5 focus:border-indigo-400"
+              ]}
+            >
+              <%= Phoenix.HTML.Form.options_for_select(
+                [
+                  "1 day": "1",
+                  "2 days": "2",
+                  "3 days": "3",
+                  "1 week": "7",
+                  "2 weeks": "14",
+                  "1 month": "30",
+                  "3 months": "90"
+                ],
+                "1"
+              ) %>
+            </select>
+          </div>
+        </div>
+
+        <button
+          phx-click={JS.dispatch("submit", to: "#create-form")}
+          class="w-full p-2 text-md font-semibold leading-6 rounded border-2 transition ease-in-out duration-300 hover:drop-shadow-lg text-zinc-50 hover:text-white bg-indigo-400 hover:bg-indigo-500 border-indigo-400 hover:border-indigo-500"
+        >
+          Share secret
+        </button>
+      </div>
+    </div>
+  </div>
+<% else %>
+  <div
+    id="share-form"
+    phx-hook="ShareForm"
+    data-link-id={@link.id}
+    class="p-16 flex items-center flex-col"
+  >
+    <header class="py-6 drop-shadow-lg text-zinc-50 text-center">
+      <h1 class="pb-3 text-6xl max-w-md leading-tight">Share this link</h1>
+      <p class="text-2xl"><%= expiration_message(@link) %></p>
+    </header>
+
+    <input
+      type="text"
+      readonly
+      class={[
+        "w-[600px] rounded-md transition-all ease-in-out duration-300",
+        "shadow-md text-md text-zinc-800 cursor-pointer focus:cursor-text",
+        "bg-indigo-50/40 border-indigo-200 hover:border-indigo-400",
+        "focus:border-indigo-400 focus:outline-none focus:ring-4 focus:bg-white focus:ring-indigo-800/5"
+      ]}
+    />
+
+    <button
+      phx-click={JS.patch(~p"/")}
+      class="mt-6 p-2 text-md font-semibold leading-6 rounded border-2 transition ease-in-out duration-300 hover:drop-shadow-lg text-zinc-50 hover:text-white bg-indigo-400 hover:bg-indigo-500 border-indigo-400 hover:border-indigo-500"
+    >
+      New share
+    </button>
+  </div>
+<% end %>
