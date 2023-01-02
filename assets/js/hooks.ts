@@ -139,10 +139,14 @@ export async function mountViewFormHook(window: Window, context: HookContext) {
     ciphertext
   );
 
-  const plaintextInput = viewForm.querySelector(
-    "#plaintext"
-  ) as HTMLTextAreaElement;
-
   // Reveal the plaintext to the user
+  //
+  // WARNING:
+  //
+  // DO NOT INSERT THE DECRYPTED PLAINTEXT INTO ANYTHING OTHER THAN A TEXTAREA
+  // WITHOUT CAREFULLY SANITIZING IT. DOING SO WILL RESULT IN A XSS VULNERABILITY.
+  const plaintextInput = viewForm.querySelector(
+    "textarea#plaintext"
+  ) as HTMLTextAreaElement;
   plaintextInput.value = UTF8.encode(plaintext);
 }
