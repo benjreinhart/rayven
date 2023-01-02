@@ -1,26 +1,43 @@
 defmodule Rayven.ShareLinksFixtures do
-  @moduledoc """
-  This module defines test helpers for creating
-  entities via the `Rayven.ShareLinks` context.
-  """
+  def link_crypto_attributes() do
+    %{
+      id: rand_bytes(32, :base58),
+      aes_iv: rand_bytes(12, :base64),
+      passphrase_salt: rand_bytes(64, :base64),
+      passphrase_digest: rand_bytes(32, :base16),
+      ciphertext: rand_bytes(64, :base64)
+    }
+  end
 
-  @doc """
-  Generate a link.
-  """
+  def link_attributes() do
+    Map.merge(link_crypto_attributes(), %{max_views: 1, expires_at: expires(1)})
+  end
+
   def link_fixture(attrs \\ %{}) do
-    {:ok, link} =
-      attrs
-      |> Enum.into(%{
-        aes_iv: "some aes_iv",
-        ciphertext: "some ciphertext",
-        expires_at: ~N[2022-12-27 18:13:00],
-        max_views: 42,
-        passphrase_digest: "some passphrase_digest",
-        passphrase_salt: "some passphrase_salt",
-        views: 42
-      })
-      |> Rayven.ShareLinks.create_link()
+    attrs
+    |> Enum.into(link_attributes())
+    |> Rayven.ShareLinks.create_link!()
+  end
 
-    link
+  def expires(days_from_now) do
+    NaiveDateTime.utc_now() |> NaiveDateTime.add(days_from_now, :day)
+  end
+
+  def rand_bytes(byte_size, :base16) do
+    byte_size
+    |> :crypto.strong_rand_bytes()
+    |> Base.encode16(case: :lower)
+  end
+
+  def rand_bytes(byte_size, :base58) do
+    byte_size
+    |> :crypto.strong_rand_bytes()
+    |> Base58.encode()
+  end
+
+  def rand_bytes(byte_size, :base64) do
+    byte_size
+    |> :crypto.strong_rand_bytes()
+    |> Base.encode64()
   end
 end

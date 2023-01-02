@@ -45,7 +45,7 @@ defmodule Rayven.ShareLinks.Link do
     link.views < link.max_views and not expired?(link)
   end
 
-  defp expired?(%__MODULE__{expires_at: expires_at}) do
+  def expired?(%__MODULE__{expires_at: expires_at}) do
     now = NaiveDateTime.utc_now()
     :gt == NaiveDateTime.compare(now, expires_at)
   end

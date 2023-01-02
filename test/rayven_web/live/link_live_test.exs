@@ -1,110 +1,105 @@
 defmodule RayvenWeb.LinkLiveTest do
   use RayvenWeb.ConnCase
 
+  alias Rayven.ShareLinks
+
   import Phoenix.LiveViewTest
   import Rayven.ShareLinksFixtures
 
-  @create_attrs %{aes_iv: "some aes_iv", ciphertext: "some ciphertext", expires_at: "2022-12-27T18:13:00", max_views: 42, passphrase_digest: "some passphrase_digest", passphrase_salt: "some passphrase_salt", views: 42}
-  @update_attrs %{aes_iv: "some updated aes_iv", ciphertext: "some updated ciphertext", expires_at: "2022-12-28T18:13:00", max_views: 43, passphrase_digest: "some updated passphrase_digest", passphrase_salt: "some updated passphrase_salt", views: 43}
-  @invalid_attrs %{aes_iv: nil, ciphertext: nil, expires_at: nil, max_views: nil, passphrase_digest: nil, passphrase_salt: nil, views: nil}
-
-  defp create_link(_) do
-    link = link_fixture()
-    %{link: link}
-  end
-
   describe "Index" do
-    setup [:create_link]
-
-    test "lists all links", %{conn: conn, link: link} do
-      {:ok, _index_live, html} = live(conn, ~p"/links")
-
-      assert html =~ "Listing Links"
-      assert html =~ link.aes_iv
+    test "renders homepage", %{conn: conn} do
+      {:ok, index_live, html} = live(conn, ~p"/")
+      assert html =~ "We keep secrets. You share them."
+      assert has_element?(index_live, "#create-form")
+      assert has_element?(index_live, "textarea#plaintext")
+      assert has_element?(index_live, "select#max-views")
+      assert has_element?(index_live, "select#max-days")
+      assert has_element?(index_live, "button", "Share secret")
     end
 
     test "saves new link", %{conn: conn} do
-      {:ok, index_live, _html} = live(conn, ~p"/links")
+      {:ok, index_live, _html} = live(conn, ~p"/")
 
-      assert index_live |> element("a", "New Link") |> render_click() =~
-               "New Link"
+      link_attributes =
+        Map.merge(link_crypto_attributes(), %{
+          max_views: "1",
+          max_days: "1"
+        })
 
-      assert_patch(index_live, ~p"/links/new")
+      link_id = link_attributes.id
 
-      assert index_live
-             |> form("#link-form", link: @invalid_attrs)
-             |> render_change() =~ "can&#39;t be blank"
+      assert_raise Ecto.NoResultsError, fn -> ShareLinks.get_link!(link_id) end
 
-      {:ok, _, html} =
+      html =
         index_live
-        |> form("#link-form", link: @create_attrs)
-        |> render_submit()
-        |> follow_redirect(conn, ~p"/links")
+        |> element("#create-form")
+        |> render_hook(:submit, %{link: link_attributes})
 
-      assert html =~ "Link created successfully"
-      assert html =~ "some aes_iv"
-    end
+      assert_patched(index_live, ~p"/s/#{link_id}/share")
+      assert html =~ "Share this link"
+      assert has_element?(index_live, "#share-form")
 
-    test "updates link in listing", %{conn: conn, link: link} do
-      {:ok, index_live, _html} = live(conn, ~p"/links")
-
-      assert index_live |> element("#links-#{link.id} a", "Edit") |> render_click() =~
-               "Edit Link"
-
-      assert_patch(index_live, ~p"/links/#{link}/edit")
-
-      assert index_live
-             |> form("#link-form", link: @invalid_attrs)
-             |> render_change() =~ "can&#39;t be blank"
-
-      {:ok, _, html} =
-        index_live
-        |> form("#link-form", link: @update_attrs)
-        |> render_submit()
-        |> follow_redirect(conn, ~p"/links")
-
-      assert html =~ "Link updated successfully"
-      assert html =~ "some updated aes_iv"
-    end
-
-    test "deletes link in listing", %{conn: conn, link: link} do
-      {:ok, index_live, _html} = live(conn, ~p"/links")
-
-      assert index_live |> element("#links-#{link.id} a", "Delete") |> render_click()
-      refute has_element?(index_live, "#link-#{link.id}")
+      link = ShareLinks.get_link!(link_id)
+      assert 0 == link.views
+      assert 1 == link.max_views
     end
   end
 
   describe "Show" do
-    setup [:create_link]
+    test "displays form to view link", %{conn: conn} do
+      link = link_fixture(%{max_views: 2})
 
-    test "displays link", %{conn: conn, link: link} do
-      {:ok, _show_live, html} = live(conn, ~p"/links/#{link}")
+      {:ok, show_live, html} = live(conn, ~p"/s/#{link}")
 
-      assert html =~ "Show Link"
-      assert html =~ link.aes_iv
-    end
+      assert html =~ "Shhh, it&#39;s a secret"
+      assert html =~ "Only those with this link can view the contents."
+      assert html =~ "Make sure you keep it safe."
+      refute has_element?(show_live, "#view-form")
 
-    test "updates link within modal", %{conn: conn, link: link} do
-      {:ok, show_live, _html} = live(conn, ~p"/links/#{link}")
+      assert 0 == link.views
+      assert 2 == link.max_views
 
-      assert show_live |> element("a", "Edit") |> render_click() =~
-               "Edit Link"
-
-      assert_patch(show_live, ~p"/links/#{link}/show/edit")
-
-      assert show_live
-             |> form("#link-form", link: @invalid_attrs)
-             |> render_change() =~ "can&#39;t be blank"
-
-      {:ok, _, html} =
+      html =
         show_live
-        |> form("#link-form", link: @update_attrs)
-        |> render_submit()
-        |> follow_redirect(conn, ~p"/links/#{link}")
+        |> element("#view-button", "View secret")
+        |> render_hook(:view, %{passphrase_digest: link.passphrase_digest})
 
-      assert html =~ "Link updated successfully"
-      assert html =~ "some updated aes_iv"
+      assert has_element?(
+               show_live,
+               "#view-form[data-passphrase-salt=\"#{link.passphrase_salt}\"][data-aes-iv=\"#{link.aes_iv}\"][data-ciphertext=\"#{link.ciphertext}\"]"
+             )
+
+      # Reload link
+      link = ShareLinks.get_link!(link.id)
+
+      # One view was recorded
+      assert 1 == link.views
+      assert 2 == link.max_views
+
+      # Link still has one view left
+      refute html =~ "This link has now expired"
+
+      {:ok, show_live, _html} = live(conn, ~p"/s/#{link}")
+
+      html =
+        show_live
+        |> element("#view-button", "View secret")
+        |> render_hook(:view, %{passphrase_digest: link.passphrase_digest})
+
+      assert has_element?(
+               show_live,
+               "#view-form[data-passphrase-salt=\"#{link.passphrase_salt}\"][data-aes-iv=\"#{link.aes_iv}\"][data-ciphertext=\"#{link.ciphertext}\"]"
+             )
+
+      # Reload link
+      link = ShareLinks.get_link!(link.id)
+
+      # One more view was recorded
+      assert 2 == link.views
+      assert 2 == link.max_views
+
+      # Link is now expired
+      assert html =~ "This link has now expired"
     end
   end
 end
