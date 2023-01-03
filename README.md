@@ -14,7 +14,7 @@ Sensitive values, like passwords, private keys, SSNs, photos of driver licenses,
 
 There are a couple of products out there that use end-to-end encryption for exactly this purpose. But the ones I know about are not open source and are therefore hard or impossible to fully audit.
 
-Rayven intends to be a fully open source alternative to something like [Doppler Share](https://share.doppler.com) and [Wormhole](https://wormhole.app). It's goals are:
+Rayven intends to be a fully open source alternative to something like [Doppler Share](https://share.doppler.com) and [Wormhole](https://wormhole.app). Its goals are:
 
 * Support private and secure data sharing via end-to-end encryption.
 * Open source the application so anyone can use it and so that it can be thoroughly audited.
